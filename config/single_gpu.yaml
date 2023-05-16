@@ -1,0 +1,5 @@
+distributed_type: 'NO'
+dynamo_backend: 'no'
+mixed_precision: 'no'
+num_machines: 1
+num_processes: 1
