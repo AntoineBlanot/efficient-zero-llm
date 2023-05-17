@@ -14,14 +14,14 @@ class Trainer():
 
     def __init__(
         self,
-        train_dataloader: DataLoader,
-        eval_dataloader: DataLoader,
         model: Module,
-        tokenizer: AutoTokenizer,
-        optimizer: torch.optim,
-        scheduler: torch.optim.lr_scheduler,
-        train_args: TrainingArgs,
-        compute_metrics: Callable
+        train_dataloader: DataLoader = None,
+        eval_dataloader: DataLoader = None,
+        tokenizer: AutoTokenizer = None,
+        optimizer: torch.optim = None,
+        scheduler: torch.optim.lr_scheduler = None,
+        train_args: TrainingArgs = None,
+        compute_metrics: Callable = None
     ) -> None:
         
         self.accelerator = Accelerator(log_with="wandb")
@@ -37,12 +37,12 @@ class Trainer():
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.compute_metrics = compute_metrics
-        self.loss_fn = CrossEntropyLoss(reduction='none')
 
         self.args = train_args
 
     def train(self) -> Dict[str, Any]:
         self.model.train()
+        Path(self.args.output_dir).mkdir(parents=True, exist_ok=True)
         self.accelerator.init_trackers(project_name=self.args.wandb_project, init_kwargs={'wandb': {'name': self.args.wandb_name}})
         
         max_train_steps = self.args.max_steps if self.args.max_steps is not None else len(self.train_dataloader)
@@ -58,11 +58,9 @@ class Trainer():
 
                 self.optimizer.zero_grad()
 
-                labels = inputs['labels']
                 outputs = self.model(**inputs)
-                logits = outputs['logits']
+                loss = outputs['loss']
 
-                loss = self.loss_fn(logits, labels)
                 self.accelerator.backward(loss.mean())
                 self.optimizer.step()
                 self.scheduler.step()
@@ -121,7 +119,7 @@ class Trainer():
             with torch.no_grad():
                 outputs = self.model(**inputs)
                 logits = outputs['logits']
-                loss = self.loss_fn(logits, labels)
+                loss = outputs['loss']
 
             preds = logits.argmax(-1)
             preds, labels = self.accelerator.gather_for_metrics((preds, labels))
