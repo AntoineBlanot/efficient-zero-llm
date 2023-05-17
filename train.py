@@ -42,8 +42,8 @@ data_collator = T5Collator(tokenizer)
 train_data = T5Dataset(data_args.path + "/train")
 eval_data = T5Dataset(data_args.path + "/dev")
 
-train_dataloader = DataLoader(train_data, batch_size=train_args.bs, collate_fn=data_collator)
-eval_dataloader = DataLoader(eval_data, batch_size=train_args.bs, collate_fn=data_collator)
+train_dataloader = DataLoader(train_data, batch_size=data_args.bs, collate_fn=data_collator)
+eval_dataloader = DataLoader(eval_data, batch_size=data_args.bs, collate_fn=data_collator)
 #endregion
 
 
@@ -79,9 +79,9 @@ def compute_metrics(preds, labels):
 
 
 trainer = Trainer(
+    model=model,
     train_dataloader=train_dataloader,
     eval_dataloader=eval_dataloader,
-    model=model,
     tokenizer=tokenizer,
     optimizer=optimizer,
     scheduler=scheduler,
