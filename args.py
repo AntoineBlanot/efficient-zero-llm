@@ -12,6 +12,7 @@ class DataArgs:
     """Class for dataset arguments"""
     
     path: str = field(metadata={'help': 'Local path of the dataset'})
+    bs: int = field(metadata={'help': 'Batch size'})
     seq_length: int = field(metadata={'help': 'Maximum sequence length (longer inputs are truncated)'})
 
 
@@ -21,7 +22,6 @@ class TrainingArgs:
 
     output_dir: str = field(metadata={'help': 'Name of the local directory where checkpoints will be saved'})
 
-    bs: int = field(metadata={'help': 'Batch size'})
     lr: float = field(metadata={'help': 'Maximum learning rate'})
     wd: float = field(metadata={'help': 'Weight decay'})
 
