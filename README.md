@@ -13,3 +13,24 @@ Once conda is installed, you can create and activate the environment using the f
 conda env create -f efficient-llm.yml
 conda activate efficient-llm
 ```
+
+## 1. Training
+To train your model efficiently, you can run a simple command and pass arguments throught it like the config file, model path and data path. You can also pass different hyperparameters like the batch size, learning rate, weight decay and many other.
+
+You can check all the arguments supported right now in the [args.py](args.py) file.
+
+Here is how a training script looks like:
+```
+CONFIG="config/single_gpu.yaml"
+MODEL_PATH="AntoineBlanot/flan-t5-xxl-classif-3way"
+DATA_PATH=...
+
+RUN_NAME="3way-nli-mixture"
+
+accelerate launch --config_file $CONFIG train.py \
+  --pretrained_model_name_or_path $MODEL_PATH \
+  --path $DATA_PATH --bs 32 --seq_length 128 \
+  --output_dir "exp/$RUN_NAME" --lr 1e-4 --wd 0 \
+  --max_steps 30178 --warmup_steps 3018 --log_steps 500 --eval_steps 5000 --save_steps 5000 \
+  --wandb_project "efficient-llm" --wandb_name $RUN_NAME
+ 
