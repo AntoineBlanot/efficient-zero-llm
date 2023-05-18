@@ -14,6 +14,14 @@ conda env create -f efficient-llm.yml
 conda activate efficient-llm
 ```
 
+## Trained models
+Model checkpoints can be find in this repo: https://github.com/AntoineBlanot/zero-nlp
+
+Reported scores are accuracy on the validation set.
+| Model name | Size | MNLI (m) | MNLI (mm) | SNLI | SciTail |
+|:----------:|:----:|:--------:|:---------:|:----:|:-------:|
+| 3way-nli-mixture | 5B | 0.923 | 0.922 | 0.942 | 0.966 |
+
 ## 1. Training
 To train your model efficiently, you can run a simple command and pass arguments throught it like the config file, model path and data path. You can also pass different hyperparameters like the batch size, learning rate, weight decay and many other.
 
