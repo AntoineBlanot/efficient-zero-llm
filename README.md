@@ -42,7 +42,7 @@ To evaluate your model you need a similar command. The model path is the path to
 Here is how an evaluation script looks like:
 ```
 CONFIG="config/single_gpu.yaml"
-MODEL_PATH="AntoineBlanot/flan-t5-xxl-classif-3way/checkpoint-..."
+MODEL_PATH=".../checkpoint-..."
 DATA_PATH=...
 
 accelerate launch --config_file $CONFIG eval.py \
