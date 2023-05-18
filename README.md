@@ -33,4 +33,25 @@ accelerate launch --config_file $CONFIG train.py \
   --output_dir "exp/$RUN_NAME" --lr 1e-4 --wd 0 \
   --max_steps 30178 --warmup_steps 3018 --log_steps 500 --eval_steps 5000 --save_steps 5000 \
   --wandb_project "efficient-llm" --wandb_name $RUN_NAME
- 
+
+```
+
+## 2. Evaluation
+To evaluate your model you need a similar command. The model path is the path to the checkpoint you want to evaluate on.
+
+Here is how an evaluation script looks like:
+```
+CONFIG="config/single_gpu.yaml"
+MODEL_PATH="AntoineBlanot/flan-t5-xxl-classif-3way/checkpoint-..."
+DATA_PATH=...
+
+accelerate launch --config_file $CONFIG eval.py \
+  --pretrained_model_name_or_path $MODEL_PATH \
+  --path $DATA_PATH --bs 32 --seq_length 128
+
+```
+
+## 3. Inference
+For zero-shot inference, please refer to another of my repo: https://github.com/AntoineBlanot/zero-nlp
+
+Simple inference is not implemented for now...
