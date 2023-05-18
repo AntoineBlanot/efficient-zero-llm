@@ -27,7 +27,7 @@ model.eval()
 
 
 #region Tokenizer + Data
-tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_name_or_path)
+tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_name_or_path, model_max_length=data_args.seq_length)
 data_collator = T5Collator(tokenizer)
 
 eval_data = T5Dataset(data_args.path + "/dev")
