@@ -68,7 +68,7 @@ dependencies:
       - packaging==23.1
       - pandas==2.0.1
       - pathtools==0.1.2
-      - peft==0.4.0.dev0
+      - peft==0.2.0
       - protobuf==4.23.0
       - psutil==5.9.5
       - pyarrow==12.0.0
