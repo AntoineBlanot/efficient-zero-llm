@@ -2,11 +2,14 @@ from typing import Tuple
 
 import torch
 from torch import Tensor, nn, FloatTensor, LongTensor, BoolTensor
-from transformers import T5Model
+from transformers import T5Model, RobertaModel
 from transformers.models.t5.configuration_t5 import T5Config
-
+from transformers.models.roberta.configuration_roberta import RobertaConfig
 
 class T5ForClassification(T5Model):
+    '''
+    Module based on `T5` models but adapted for `sequence classification` task
+    '''
     
     def __init__(self, config: T5Config):
         super().__init__(config)
@@ -25,6 +28,33 @@ class T5ForClassification(T5Model):
 
         if labels is not None:
             loss = self.loss_fn(logits, labels)
+            outputs_dict.update({'loss': loss})
+
+        return outputs_dict
+
+
+class RobertaForTokenClassification(RobertaModel):
+    '''
+    Module based on `BERT` models but adapted for `token classification` task
+    '''
+
+    def __init__(self, config: RobertaConfig):
+        super().__init__(config)
+        self.token_head = torch.nn.Linear(self.config.hidden_size, self.config.n_class)
+        self.loss_fn = nn.CrossEntropyLoss(reduction='none')
+
+    def forward(self, input_ids: Tensor = None, labels: LongTensor = None, attention_mask: Tensor = None, token_type_ids: Tensor = None, position_ids: Tensor = None, inputs_embeds: Tensor = None, output_attentions: bool = None, output_hidden_states: bool = None, return_dict: bool = None) -> Tuple[FloatTensor]:
+        outputs = super().forward(input_ids, attention_mask, token_type_ids, position_ids, inputs_embeds, output_attentions, output_hidden_states, return_dict)
+        last_hidden_state = outputs.last_hidden_state
+        logits = self.token_head(last_hidden_state)
+
+        outputs_dict = dict(
+            logits=logits,
+            last_hidden_state=last_hidden_state
+        )
+
+        if labels is not None:
+            loss = self.loss_fn(logits.view(-1, self.config.n_class), labels.view(-1))
             outputs_dict.update({'loss': loss})
 
         return outputs_dict
