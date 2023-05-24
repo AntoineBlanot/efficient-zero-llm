@@ -4,7 +4,6 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
-from torch.nn import Module, CrossEntropyLoss
 from transformers import AutoTokenizer
 from accelerate import Accelerator
 
@@ -14,7 +13,7 @@ class Trainer():
 
     def __init__(
         self,
-        model: Module,
+        model: torch.nn.Module,
         train_dataloader: DataLoader = None,
         eval_dataloader: DataLoader = None,
         tokenizer: AutoTokenizer = None,
@@ -129,12 +128,10 @@ class Trainer():
             all_labels.append(labels.cpu())
 
         loss = torch.cat(all_loss).mean().item()
-        preds = torch.cat(all_preds)
-        labels = torch.cat(all_labels)
         
         metrics.update({'loss': loss})
         if self.compute_metrics:
-            metrics.update(self.compute_metrics(preds, labels))
+            metrics.update(self.compute_metrics(all_preds, all_labels))
 
         return metrics
     
