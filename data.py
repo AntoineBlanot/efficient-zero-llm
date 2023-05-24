@@ -9,6 +9,7 @@ class DatasetFromDisk(Dataset):
     '''
     Dataset class that loads data locally.
     '''
+    
     def __init__(self, path: str) -> None:
         super().__init__()
         self.data = load_from_disk(path)
@@ -29,6 +30,7 @@ class T5ClassifCollator():
         - `target_text`: text to feed to the decoder (str)
         - `label`: target class index (int)
     '''
+
     def __init__(self, tokenizer) -> None:
         self.tokenizer = tokenizer
 
