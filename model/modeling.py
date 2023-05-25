@@ -41,7 +41,7 @@ class RobertaForTokenClassification(RobertaModel):
     def __init__(self, config: RobertaConfig):
         super().__init__(config)
         self.token_head = torch.nn.Linear(self.config.hidden_size, self.config.n_class)
-        self.loss_fn = nn.CrossEntropyLoss(reduction='none')
+        self.loss_fn = nn.CrossEntropyLoss(reduction='mean')
 
     def forward(self, input_ids: Tensor = None, labels: LongTensor = None, attention_mask: Tensor = None, token_type_ids: Tensor = None, position_ids: Tensor = None, inputs_embeds: Tensor = None, output_attentions: bool = None, output_hidden_states: bool = None, return_dict: bool = None) -> Tuple[FloatTensor]:
         outputs = super().forward(input_ids, attention_mask, token_type_ids, position_ids, inputs_embeds, output_attentions, output_hidden_states, return_dict)
@@ -55,6 +55,33 @@ class RobertaForTokenClassification(RobertaModel):
 
         if labels is not None:
             loss = self.loss_fn(logits.view(-1, self.config.n_class), labels.view(-1))
+            outputs_dict.update({'loss': loss})
+
+        return outputs_dict
+
+
+class RobertaForClassification(RobertaModel):
+    '''
+    Module based on `BERT` models but adapted for `sequence classification` task
+    '''
+
+    def __init__(self, config: RobertaConfig):
+        super().__init__(config)
+        self.classif_head = torch.nn.Linear(self.config.hidden_size, self.config.n_class)
+        self.loss_fn = nn.CrossEntropyLoss(reduction='mean')
+
+    def forward(self, input_ids: Tensor = None, labels: LongTensor = None, attention_mask: Tensor = None, token_type_ids: Tensor = None, position_ids: Tensor = None, inputs_embeds: Tensor = None, output_attentions: bool = None, output_hidden_states: bool = None, return_dict: bool = None) -> Tuple[FloatTensor]:
+        outputs = super().forward(input_ids, attention_mask, token_type_ids, position_ids, inputs_embeds, output_attentions, output_hidden_states, return_dict)
+        last_hidden_state = outputs.last_hidden_state
+        logits = self.classif_head(last_hidden_state[:, 0, :])
+
+        outputs_dict = dict(
+            logits=logits,
+            last_hidden_state=last_hidden_state
+        )
+
+        if labels is not None:
+            loss = self.loss_fn(logits, labels)
             outputs_dict.update({'loss': loss})
 
         return outputs_dict
