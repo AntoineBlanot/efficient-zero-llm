@@ -60,11 +60,11 @@ class Trainer():
                 outputs = self.model(**inputs)
                 loss = outputs['loss']
 
-                self.accelerator.backward(loss.mean())
+                self.accelerator.backward(loss)
                 self.optimizer.step()
                 self.scheduler.step()
 
-                all_loss.append(loss.detach().cpu())
+                all_loss.append(loss.detach().cpu().unsqueeze(0))
 
                 if self.should_log(current_step=train_step):
                     loss = torch.cat(all_loss).mean().item()
@@ -123,7 +123,7 @@ class Trainer():
             preds = logits.argmax(-1)
             preds, labels = self.accelerator.gather_for_metrics((preds, labels))
 
-            all_loss.append(loss.detach().cpu())
+            all_loss.append(loss.detach().cpu().unsqueeze(0))
             all_preds.append(preds.cpu())
             all_labels.append(labels.cpu())
 
