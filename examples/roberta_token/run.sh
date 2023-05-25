@@ -20,6 +20,6 @@ DATA_PATH="/home/chikara/ws/datasets/examples/SPAN-DETECTION"
 
 accelerate launch --config_file $CONFIG eval_token.py \
   --pretrained_model_name_or_path $MODEL_PATH \
-  --path $DATA_PATH --bs 32 --seq_length 128
+  --path $DATA_PATH --bs 32 --seq_length 512
 
   

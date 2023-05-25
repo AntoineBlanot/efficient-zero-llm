@@ -1,3 +1,4 @@
+import numpy as np
 from torch.utils.data import DataLoader
 from evaluate import load
 from transformers import HfArgumentParser, BitsAndBytesConfig, RobertaTokenizerFast, RobertaConfig
@@ -47,6 +48,9 @@ accuracy_metric = load('accuracy')
 f1_metric = load('f1')
 
 def compute_metrics(preds, labels):
+    preds = np.concatenate(preds)
+    labels = np.concatenate(labels)
+
     acc = accuracy_metric.compute(predictions=preds, references=labels)
     f1 = f1_metric.compute(predictions=preds, references=labels, average='macro')
     
