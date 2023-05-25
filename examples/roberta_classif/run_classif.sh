@@ -5,7 +5,7 @@ DATA_PATH="/home/chikara/ws/datasets/examples/NLI"
 
 RUN_NAME="roberta-nli"
 
-accelerate launch --config_file $CONFIG train_roberta.py \
+accelerate launch --config_file $CONFIG train_classif.py \
   --pretrained_model_name_or_path $MODEL_PATH \
   --path $DATA_PATH --bs 128 --seq_length 128 \
   --output_dir "exp/$RUN_NAME" --lr 1e-4 --wd 0 \
@@ -17,6 +17,6 @@ CONFIG="config/single_gpu.yaml"
 MODEL_PATH="/home/chikara/ws/efficient-llm/exp/roberta-nli/checkpoint-7000"
 DATA_PATH="/home/chikara/ws/datasets/examples/NLI"
 
-accelerate launch --config_file $CONFIG eval_roberta.py \
+accelerate launch --config_file $CONFIG eval_classif.py \
   --pretrained_model_name_or_path $MODEL_PATH \
   --path $DATA_PATH --bs 32 --seq_length 512

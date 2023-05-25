@@ -1,11 +1,11 @@
 import numpy as np
 from torch.utils.data import DataLoader
 from evaluate import load
-from transformers import HfArgumentParser, BitsAndBytesConfig, T5TokenizerFast, Adafactor, get_linear_schedule_with_warmup
+from transformers import HfArgumentParser, BitsAndBytesConfig, RobertaTokenizerFast, Adafactor, get_linear_schedule_with_warmup
 from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training
 
-from model.modeling import T5ForClassification
-from data import DatasetFromDisk, T5ClassifCollator
+from model.modeling import RobertaForClassification
+from data import DatasetFromDisk, RobertaCollator
 from args import TrainingArgs, ModelArgs, DataArgs
 from trainer import Trainer
 
@@ -23,12 +23,12 @@ quantization_config = BitsAndBytesConfig(
     load_in_8bit=True,
     llm_int8_skip_modules=trainable_layers
 )
-model = T5ForClassification.from_pretrained(model_args.pretrained_model_name_or_path, device_map=device_map, quantization_config=quantization_config)
+model = RobertaForClassification.from_pretrained(model_args.pretrained_model_name_or_path, device_map=device_map, quantization_config=quantization_config)
 # Define LoRA Config
 lora_config = LoraConfig(
     r=16,
     lora_alpha=32,
-    target_modules=['q', 'v'],
+    target_modules=['query', 'value'],
     lora_dropout=0.05,
     bias='none',
     modules_to_save=trainable_layers
@@ -43,8 +43,8 @@ model.print_trainable_parameters()
 
 
 #region Tokenizer + Data
-tokenizer = T5TokenizerFast.from_pretrained(model_args.pretrained_model_name_or_path, model_max_length=data_args.seq_length)
-data_collator = T5ClassifCollator(tokenizer, label2id=model.base_model.model.config.label2id)
+tokenizer = RobertaTokenizerFast.from_pretrained(model_args.pretrained_model_name_or_path, model_max_length=data_args.seq_length)
+data_collator = RobertaCollator(tokenizer, label2id=model.base_model.model.config.label2id)
 
 train_data = DatasetFromDisk(data_args.path + '/train')
 eval_data = DatasetFromDisk(data_args.path + '/dev')
@@ -66,7 +66,7 @@ optimizer = Adafactor(
     relative_step=False,
     scale_parameter=False,
     warmup_init=False,
-)  
+)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=train_args.warmup_steps, num_training_steps=train_args.max_steps)
 #endregion
 
