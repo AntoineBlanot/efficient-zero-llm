@@ -1,11 +1,11 @@
-
+import numpy as np
 from torch.utils.data import DataLoader
 from evaluate import load
-from transformers import HfArgumentParser, AutoTokenizer, AutoConfig
+from transformers import HfArgumentParser, BitsAndBytesConfig, T5TokenizerFast, T5Config
 from peft import PeftModel, PeftConfig
 
 from model.modeling import T5ForClassification
-from data import T5Dataset, T5Collator
+from data import DatasetFromDisk, T5ClassifCollator
 from args import ModelArgs, DataArgs
 from trainer import Trainer
 
@@ -17,29 +17,40 @@ print(model_args, data_args, sep='\n')
 
 
 #region Model
+device_map = {'': 0}
+trainable_layers = ['classif_head']
+quantization_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_skip_modules=trainable_layers
+)
 peft_config = PeftConfig.from_pretrained(model_args.pretrained_model_name_or_path)
-base_config = AutoConfig.from_pretrained(model_args.pretrained_model_name_or_path)
+base_config = T5Config.from_pretrained(model_args.pretrained_model_name_or_path)
 
-model = T5ForClassification.from_pretrained(pretrained_model_name_or_path=peft_config.base_model_name_or_path, **base_config.to_diff_dict(), load_in_8bit=True, device_map={'': 0})
-model = PeftModel.from_pretrained(model, model_args.pretrained_model_name_or_path, device_map={'': 0})
+model = T5ForClassification.from_pretrained(pretrained_model_name_or_path=peft_config.base_model_name_or_path, **base_config.to_diff_dict(), quantization_config=quantization_config, device_map=device_map)
+print('Base model loaded')
+model = PeftModel.from_pretrained(model, model_args.pretrained_model_name_or_path, device_map=device_map)
+print('Full checkpoint loaded')
 model.eval()
 #endregion
 
 
 #region Tokenizer + Data
-tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_name_or_path, model_max_length=data_args.seq_length)
-data_collator = T5Collator(tokenizer)
+tokenizer = T5TokenizerFast.from_pretrained(model_args.pretrained_model_name_or_path, model_max_length=data_args.seq_length)
+data_collator = T5ClassifCollator(tokenizer, label2id=model.base_model.model.config.label2id)
 
-eval_data = T5Dataset(data_args.path + "/dev")
+eval_data = DatasetFromDisk(data_args.path + '/dev')
 eval_dataloader = DataLoader(eval_data, batch_size=data_args.bs, collate_fn=data_collator)
 #endregion
 
 
 #region Metrics
-accuracy_metric = load("accuracy")
-f1_metric = load("f1")
+accuracy_metric = load('accuracy')
+f1_metric = load('f1')
 
 def compute_metrics(preds, labels):
+    preds = np.concatenate(preds)
+    labels = np.concatenate(labels)
+    
     acc = accuracy_metric.compute(predictions=preds, references=labels)
     f1 = f1_metric.compute(predictions=preds, references=labels, average='macro')
     
