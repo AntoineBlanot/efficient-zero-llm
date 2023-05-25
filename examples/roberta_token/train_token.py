@@ -38,7 +38,7 @@ lora_config = LoraConfig(
     modules_to_save=trainable_layers
 )
 # prepare int-8 model for training
-model = prepare_model_for_int8_training(model)
+model = prepare_model_for_int8_training(model, output_embedding_layer_name='', use_gradient_checkpointing=True, layer_norm_names=['layer_norm'])
 # add LoRA adaptor
 model = get_peft_model(model, lora_config)
 print(model)
@@ -70,7 +70,7 @@ optimizer = Adafactor(
     relative_step=False,
     scale_parameter=False,
     warmup_init=False,
-)  
+)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=train_args.warmup_steps, num_training_steps=train_args.max_steps)
 #endregion
 
