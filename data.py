@@ -61,17 +61,19 @@ class RobertaTokenCollator():
         - `ner_tags`: target tags for each pre-tokenized token (list of int)
     '''
 
-    def __init__(self, tokenizer) -> None:
+    def __init__(self, tokenizer, label2id: Dict[str, int]) -> None:
         self.tokenizer = tokenizer
+        self.label2id = label2id
         self.preprocess_fn = self.tokenize_and_align_labels
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         batched_tokens = [x['tokens'] for x in features]
-        batched_ner_tags = [x['ner_tags'] for x in features]
+        batched_str_tags = [x['bin_tags'] for x in features]
+        batched_tags = [[self.label2id[tag] for tag in tag_list] for tag_list in batched_str_tags]
 
         examples_dict = dict(
             tokens=batched_tokens,
-            ner_tags=batched_ner_tags
+            tags=batched_tags
         )
 
         inputs = self.preprocess_fn(examples=examples_dict)
@@ -82,7 +84,7 @@ class RobertaTokenCollator():
         tokenized_inputs = self.tokenizer(examples['tokens'], is_split_into_words=True, padding=True, truncation=True, pad_to_multiple_of=8, return_tensors='pt')
 
         labels = []
-        for i, label in enumerate(examples['ner_tags']):
+        for i, label in enumerate(examples['tags']):
             word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
             previous_word_idx = None
             label_ids = []
@@ -99,3 +101,33 @@ class RobertaTokenCollator():
         tokenized_inputs['labels'] = torch.as_tensor(labels, dtype=torch.long)
 
         return tokenized_inputs
+    
+
+class RobertaCollator():
+    '''
+    Data collator for `BERT` models for `sequence classification` task
+
+    Required features in the dataset:
+        - `premise`: first sentence (premise for NLI tasks)
+        - `hypothesis`: second sentence (hypothesis for NLI tasks)
+        - `label`: class label (str)
+    '''
+
+    def __init__(self, tokenizer, label2id: Dict[str, int]) -> None:
+        self.tokenizer = tokenizer
+        self.label2id = label2id
+
+    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        batched_premise = [x['premise'] for x in features]
+        batched_hypothesis = [x['hypothesis'] for x in features]
+        batched_str_label = [x['label_name'] for x in features]
+        batched_label = [self.label2id[l] for l in batched_str_label]
+
+        inputs = self.tokenizer(batched_premise, batched_hypothesis, padding=True, truncation=True, pad_to_multiple_of=8, return_tensors='pt')
+        labels = torch.as_tensor(batched_label, dtype=torch.long)
+
+        return dict(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            labels=labels
+        )
