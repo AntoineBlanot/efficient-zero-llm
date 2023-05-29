@@ -35,6 +35,7 @@ print('Base model loaded')
 model = PeftModel.from_pretrained(model, model_args.pretrained_model_name_or_path, device_map=device_map)
 print('Full checkpoint loaded')
 model.eval()
+print(model)
 #endregion
 
 
