@@ -4,8 +4,7 @@ from peft import PeftModel, PeftConfig
 from model.modeling import RobertaForTokenClassification
 
 MODEL_PATH = "/home/chikara/ws/efficient-llm/exp/best-token-classif"
-TOKENS = [ "The", "following", "were", "among", "Friday", "'s", "offerings", "and", "pricings", "in", "the", "U.S.", "and", "non-U.S.", "capital", "markets", ",", "with", "terms", "and", "syndicate", "manager", ",", "as", "compiled", "by", "Dow", "Jones", "Capital", "Markets", "Report", ":" ]
-
+TOKENS = [ "$", "150", "million", "of", "9", "%", "debentures", "due", "Oct.", "15", ",", "2019", ",", "priced", "at", "99.943", "to", "yield", "9.008", "%", "." ]
 #region Model
 device_map = {'': 0}
 trainable_layers = ['token_head']
@@ -30,28 +29,34 @@ tokenizer = RobertaTokenizerFast.from_pretrained(MODEL_PATH, model_max_length=51
 inputs = tokenizer(TOKENS, is_split_into_words=True, return_tensors='pt')
 logits = model(**inputs)['logits'][0]
 
-processed_inputs = tokenizer.convert_ids_to_tokens(inputs.input_ids[0])
 preds = [model.base_model.model.config.id2label[i] for i in logits.argmax(-1).tolist()]
 
-spans, current_span = [], []
-tags, current_tag = [], []
-for i, p in zip(processed_inputs, preds):
-    if p != 'O':
+def postprocess(inputs, preds):
+    res_dict = {'tags': [], 'ids': []}
+    current_tag, current_id = None, None
+
+    for i, p in enumerate(preds):
+        id = inputs.input_ids[0][i].item()   # current id
         if p.startswith('B'):
-            current_span.append(i.replace('Ġ', ''))
+            res_dict['tags'].append(current_tag) if current_tag is not None else None
+            res_dict['ids'].append(current_id) if current_id is not None else None
+            current_tag, current_id = [p], [id]
+        if p.startswith('I'):
             current_tag.append(p)
-        else:
-            current_span.append(i.replace('Ġ', ' '))
-            current_tag.append(p)
-    else:
-        if current_span != []:
-            spans.append(current_span)
-            tags.append(current_tag)
-        current_span, current_tag = [], []
+            current_id.append(id)
+
+    res_dict['tags'].append(current_tag) if current_tag is not None else None
+    res_dict['ids'].append(current_id) if current_id is not None else None
+    
+    return res_dict
+
+res = postprocess(inputs, preds)
+res['tokens'] = [tokenizer.convert_ids_to_tokens(i) for i in res['ids']]
 
 print('----- RESULTS -----')
 print('Input tokens: {}'.format(TOKENS))
 print('Possible tags: {}'.format(model.base_model.model.config.label2id.keys()))
-print('Detected tags: {}'.format(tags))
-print('Detected spans: {}'.format(spans))
-print('Detected texts: {}'.format([''.join(x) for x in spans]))
+print('Detected tags: {}'.format(res['tags']))
+print('Detected ids: {}'.format(res['ids']))
+print('Detected tokens: {}'.format(res['tokens']))
+print('Detected texts: {}'.format([''.join(toks).replace('Ġ', ' ').strip() for toks in res['tokens']]))
