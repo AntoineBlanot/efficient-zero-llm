@@ -31,13 +31,14 @@ class T5ClassifCollator():
         - `label`: target class index (int)
     '''
 
-    def __init__(self, tokenizer) -> None:
+    def __init__(self, tokenizer, label2id: Dict[str, int]) -> None:
         self.tokenizer = tokenizer
+        self.label2id = label2id
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         batched_input_text = [x['input_text'] for x in features]
         batched_target_text = [self.tokenizer.pad_token + x['target_text'] for x in features]
-        batched_label = [x['label'] for x in features]
+        batched_label = [self.label2id[x['label_name']] for x in features]
 
         inputs = self.tokenizer(batched_input_text, padding=True, truncation=True, pad_to_multiple_of=8, return_tensors='pt')
         targets = self.tokenizer(batched_target_text, padding=True, truncation=True, pad_to_multiple_of=8, return_tensors='pt')
