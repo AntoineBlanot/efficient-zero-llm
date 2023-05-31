@@ -38,7 +38,7 @@ lora_config = LoraConfig(
     modules_to_save=trainable_layers
 )
 # prepare int-8 model for training
-model = prepare_model_for_int8_training(model, output_embedding_layer_name='', use_gradient_checkpointing=True, layer_norm_names=['layer_norm'])
+model = prepare_model_for_int8_training(model, use_gradient_checkpointing=True)
 # add LoRA adaptor
 model = get_peft_model(model, lora_config)
 print(model)
