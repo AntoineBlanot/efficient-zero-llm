@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from typing import Tuple
 
+import math
 import torch
 from torch import Tensor, nn, FloatTensor, LongTensor, BoolTensor
 from transformers import T5Model, RobertaModel
@@ -16,17 +17,23 @@ class T5ForClassification(T5Model):
         super().__init__(config)
         self.classif_head = torch.nn.Sequential(OrderedDict([
             ('dropout', torch.nn.Dropout(config.dropout_rate)),
-            ('out_proj', torch.nn.Linear(config.d_model, config.n_class))
+            ('out_proj', torch.nn.utils.skip_init(torch.nn.Linear, config.d_model, config.n_class, bias=True))
         ]))
-        self.loss_fn = nn.CrossEntropyLoss(reduction='none')
+        # Init weights manually since it results in NaN
+        stdv = 1. / math.sqrt(config.d_model)
+        torch.nn.init.uniform_(self.classif_head.out_proj.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.classif_head.out_proj.bias, -stdv, stdv)
+        self.loss_fn = nn.CrossEntropyLoss(reduction='mean')
 
     def forward(self, input_ids: LongTensor = None, labels: LongTensor = None, attention_mask: FloatTensor = None, decoder_input_ids: LongTensor = None, decoder_attention_mask: BoolTensor = None, head_mask: FloatTensor = None, decoder_head_mask: FloatTensor = None, cross_attn_head_mask: Tensor = None, encoder_outputs: Tuple[Tuple[FloatTensor]] = None, past_key_values: Tuple[Tuple[FloatTensor]] = None, inputs_embeds: Tensor = None, decoder_inputs_embeds: Tensor = None, use_cache: bool = None, output_attentions: bool = None, output_hidden_states: bool = None, return_dict: bool = None) -> Tuple[FloatTensor]:        
         outputs =  super().forward(input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, head_mask, decoder_head_mask, cross_attn_head_mask, encoder_outputs, past_key_values, inputs_embeds, decoder_inputs_embeds, use_cache, output_attentions, output_hidden_states, return_dict)
         last_hidden_state = outputs.last_hidden_state
-        logits = self.classif_head(last_hidden_state[:, 0, :])
+        pooled_last_state = last_hidden_state.mean(-2)
+        logits = self.classif_head(pooled_last_state)
         
         outputs_dict = dict(
             logits=logits,
+            pooled_last_state=pooled_last_state,
             last_hidden_state=last_hidden_state
         )
 
