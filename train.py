@@ -20,8 +20,7 @@ print(train_args ,model_args, data_args, sep='\n')
 device_map = {'': 0}
 trainable_layers = ['classif_head']
 quantization_config = BitsAndBytesConfig(
-    load_in_8bit=True,
-    llm_int8_skip_modules=trainable_layers
+    load_in_8bit=True
 )
 model = T5ForClassification.from_pretrained(model_args.pretrained_model_name_or_path, device_map=device_map, quantization_config=quantization_config)
 # Define LoRA Config
@@ -34,7 +33,7 @@ lora_config = LoraConfig(
     modules_to_save=trainable_layers
 )
 # prepare int-8 model for training
-model = prepare_model_for_int8_training(model, output_embedding_layer_name='', use_gradient_checkpointing=True, layer_norm_names=['layer_norm'])
+model = prepare_model_for_int8_training(model, use_gradient_checkpointing=True)
 # add LoRA adaptor
 model = get_peft_model(model, lora_config)
 print(model)
