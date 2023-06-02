@@ -10,7 +10,7 @@ Please install [conda](https://conda.io/projects/conda/en/latest/user-guide/inst
 Once conda is installed, you can create and activate the environment using the following commads.
 
 ```
-conda env create -f efficient-llm.yml
+conda env create -f env.yml
 conda activate efficient-llm
 ```
 
