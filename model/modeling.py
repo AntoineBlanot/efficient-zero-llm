@@ -29,11 +29,7 @@ class T5ForClassification(T5Model):
         outputs =  super().forward(input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, head_mask, decoder_head_mask, cross_attn_head_mask, encoder_outputs, past_key_values, inputs_embeds, decoder_inputs_embeds, use_cache, output_attentions, output_hidden_states, return_dict)
         last_hidden_state = outputs.last_hidden_state
         pooled_last_state = last_hidden_state.mean(-2)
-
-        logits = self.classif_head.modules_to_save.default.dropout(pooled_last_state)
-        logits = logits @ self.classif_head.modules_to_save.default.out_proj.weight.t() + self.classif_head.modules_to_save.default.out_proj.bias
-
-        # logits = self.classif_head(pooled_last_state)
+        logits = self.classif_head(pooled_last_state)
         
         outputs_dict = dict(
             logits=logits,
@@ -95,32 +91,14 @@ class RobertaForClassification(RobertaModel):
             ('out_proj', torch.nn.utils.skip_init(torch.nn.Linear, config.hidden_size, config.n_class))
         ]))
         self.loss_fn = nn.CrossEntropyLoss(reduction='mean')
-        # torch.manual_seed(2023)
 
     def forward(self, input_ids: Tensor = None, labels: LongTensor = None, attention_mask: Tensor = None, token_type_ids: Tensor = None, position_ids: Tensor = None, inputs_embeds: Tensor = None, output_attentions: bool = None, output_hidden_states: bool = None, return_dict: bool = None) -> Tuple[FloatTensor]:
         outputs = super().forward(input_ids, attention_mask, token_type_ids, position_ids, inputs_embeds, output_attentions, output_hidden_states, return_dict)
         last_hidden_state = outputs.last_hidden_state
-        print(self.classif_head.modules_to_save)
-        print(self.classif_head.active_adapter)
-        print(self.classif_head.active_adapter not in self.classif_head.modules_to_save)
-        print('default' in self.classif_head.modules_to_save)
-        #logits = self.classif_head(last_hidden_state[:, 0, :])
-        dummy = torch.ones(size=last_hidden_state[:, 0, :].shape, dtype=torch.half).cuda()
-        print(dummy)
-        logits = self.classif_head.modules_to_save.default(last_hidden_state[:, 0, :])
-        real = last_hidden_state[:, 0, :] @ self.classif_head.modules_to_save.default.dense.weight.t() + self.classif_head.modules_to_save.default.dense.bias
-        real = self.classif_head.modules_to_save.default.dropout(real)
-        real = real @ self.classif_head.modules_to_save.default.out_proj.weight.t() + self.classif_head.modules_to_save.default.out_proj.bias
-        print(self.classif_head.modules_to_save.default.dense.bias)
-        print(self.classif_head.modules_to_save.default.dense.weight)
-        print(self.classif_head.modules_to_save.default.dropout)
-        print(self.classif_head.modules_to_save.default.out_proj.weight)
-        print(self.classif_head.modules_to_save.default.out_proj.bias)
-        print(logits)
-        print(real)
+        logits = self.classif_head(last_hidden_state[:, 0, :])
 
         outputs_dict = dict(
-            logits=real,
+            logits=logits,
             last_hidden_state=last_hidden_state
         )
 
