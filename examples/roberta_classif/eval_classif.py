@@ -28,9 +28,8 @@ base_config = RobertaConfig.from_pretrained(model_args.pretrained_model_name_or_
 
 model = RobertaForClassification.from_pretrained(pretrained_model_name_or_path=peft_config.base_model_name_or_path, **base_config.to_diff_dict(), quantization_config=quantization_config, device_map=device_map)
 print('Base model loaded')
-model = PeftModel.from_pretrained(model, model_args.pretrained_model_name_or_path, device_map=device_map)
+model = PeftModel.from_pretrained(model, model_args.pretrained_model_name_or_path).eval()
 print('Full checkpoint loaded')
-model.eval()
 print(model)
 #endregion
 
