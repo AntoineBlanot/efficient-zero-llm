@@ -8,6 +8,8 @@ from transformers import T5Model, RobertaModel
 from transformers.models.t5.configuration_t5 import T5Config
 from transformers.models.roberta.configuration_roberta import RobertaConfig
 
+torch.manual_seed(2023)
+
 class T5ForClassification(T5Model):
     '''
     Module based on `T5` models but adapted for `sequence classification` task
